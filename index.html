@@ -557,6 +557,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:#ffe4ec;}
 
 /* 빈 박스 숨김 — 화면 진입 직후 빈 상태 가림 */
 .instrTxt:empty,.picCard:empty,.evalCard:has(>.evalQ:empty){visibility:hidden;}
+/* 줄바꿈 — 한국어 어절 단위로 자연스럽게 */
+body,.bubble,.mascotBubble,#bubble,.instrTxt,.goal,.goal p,.tutCard,.tutCard *,.chapMsg,
+.chMsg,.tutBox,.tip,.instr,.fbBox,.helpBox,.miniInstr,.bigtxt,.title,
+.sitQBox,.sitQ,.evalQ,.swapQ,.danIntro,.tutSub,.assistTxt,h1,h2,h3,h4,p,span,div,button{
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-break: strict;
+}
+/* 인라인 코드/숫자 등은 끊지 않음 */
+.qa,.qb,.qbox,.q,.ans,.num,.numBig,.cnt,.eOpt,.eOpt *,
+.balloon,.balQ,.fcAns,.evalInput,.quizInput,.timerNum{
+  word-break: normal;
+  overflow-wrap: normal;
+}
+/* danOrigin 키패드 입력 — 보기 4개 제거 + 직접 입력 */
+.danOriginInput{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px;}
+.doDisp{font-size:20px;font-weight:800;color:#1a4a6e;text-align:center;line-height:1.4;}
+.doVal{display:inline-block;min-width:48px;background:#fff8d6;border:3px solid #ffb01f;border-radius:10px;padding:2px 12px;color:#ff5a1f;font-weight:900;font-size:32px;text-align:center;}
+.doPad{display:grid;grid-template-columns:repeat(4,56px);gap:6px;}
+.doKey{font-size:24px;font-weight:900;color:#fff;background:linear-gradient(180deg,#7bcdf2,#5fb6f0);border:3px solid #fff;border-radius:12px;cursor:pointer;width:56px;height:50px;box-shadow:0 4px 0 #2c7eb8;font-family:inherit;transition:.12s;}
+.doKey:hover{transform:translateY(-1px);}
+.doKey:active{transform:translateY(2px);box-shadow:0 2px 0 #2c7eb8;}
+.doKey.doDel{background:linear-gradient(180deg,#ffaac5,#ff7095);box-shadow:0 4px 0 #c44d6a;}
+.doKey.doOk{background:linear-gradient(180deg,#ffd96a,#f0b020);box-shadow:0 4px 0 #c08a10;color:#0a1a30;}
+.doFb{font-size:18px;font-weight:800;min-height:26px;text-align:center;}
+.doFb.ok{color:#2d7d22;}
+.doFb.hint{color:#7841c4;background:#f0e8ff;padding:6px 14px;border-radius:10px;border:2px dashed #b07bff;}
 </style>
 </head>
 <body>
@@ -1247,7 +1274,7 @@ function startDan2Origin(){
 }
 function renderDanOrigin(dan,cmpId,optId,onCorrect){
   const cmp=$('#'+cmpId);cmp.innerHTML='';
-  // Box 1: dan × 3
+  // Box 1: dan × 3 (이미 알고 있는 식 — 결과 표시)
   const b1=document.createElement('div');b1.className='cmpBox';
   b1.innerHTML=`<h3>${dan} × 3</h3>`;
   const d1=document.createElement('div');d1.className='cmpDots';
@@ -1262,7 +1289,7 @@ function renderDanOrigin(dan,cmpId,optId,onCorrect){
   b1.appendChild(r1);
   // Plus
   const plus=document.createElement('div');plus.className='cmpExtra';plus.innerHTML='<div style="font-size:48px;color:#ffd23f;font-weight:900;">+</div>';
-  // Box 2: dan × 4
+  // Box 2: dan × 4 (탐구 대상 — 결과 가림)
   const b2=document.createElement('div');b2.className='cmpBox';
   b2.innerHTML=`<h3>${dan} × 4</h3>`;
   const d2=document.createElement('div');d2.className='cmpDots';
@@ -1277,20 +1304,51 @@ function renderDanOrigin(dan,cmpId,optId,onCorrect){
     d2.appendChild(dot);
   }
   b2.appendChild(d2);
-  const r2=document.createElement('div');r2.style.fontSize='28px';r2.style.fontWeight='900';r2.style.color='#0a1a30';r2.textContent='= '+(dan*4);
+  const r2=document.createElement('div');r2.style.fontSize='28px';r2.style.fontWeight='900';r2.style.color='#ff5a1f';r2.id='r2_'+dan;
+  r2.innerHTML='= <span style="background:#fff8d6;border:3px dashed #ffb01f;padding:2px 12px;border-radius:8px;">?</span>';
   b2.appendChild(r2);
-
   cmp.appendChild(b1);cmp.appendChild(plus);cmp.appendChild(b2);
 
-  // Options
+  // 보기 4개 제거 → 키패드 입력
   const opts=$('#'+optId);opts.innerHTML='';
-  [dan-1,dan,dan+1,dan+2].forEach(v=>{
-    const b=document.createElement('button');b.className='diffOpt';b.textContent=v;
-    b.onclick=()=>{if(v===dan){b.classList.add('correct');sndOk();confetti();
-        setTimeout(()=>onCorrect&&onCorrect(),1100);}
-      else{b.classList.add('wrong');sndNo();setTimeout(()=>b.classList.remove('wrong'),600);}};
-    opts.appendChild(b);
-  });
+  const wrap=document.createElement('div');wrap.className='danOriginInput';
+  wrap.innerHTML=`
+    <div class="doDisp">한 묶음 더 추가하면 <b style="color:#ff5a1f;">몇 개</b> 더 늘어날까요?<br>
+      <span style="font-size:36px;font-weight:900;">차이: <span class="doVal" id="doVal_${dan}">_</span></span></div>
+    <div class="doPad" id="doPad_${dan}"></div>
+    <div class="doFb" id="doFb_${dan}">&nbsp;</div>`;
+  opts.appendChild(wrap);
+  const pad=document.getElementById('doPad_'+dan);
+  let _doInput='';
+  const updateDisp=()=>document.getElementById('doVal_'+dan).textContent=_doInput||'_';
+  for(let n=1;n<=9;n++){
+    const b=document.createElement('button');b.className='doKey';b.textContent=n;
+    b.onclick=()=>{if(_doInput.length<2){_doInput+=n;updateDisp();}};
+    pad.appendChild(b);
+  }
+  const del=document.createElement('button');del.className='doKey doDel';del.textContent='⌫';
+  del.onclick=()=>{_doInput=_doInput.slice(0,-1);updateDisp();};
+  pad.appendChild(del);
+  const zero=document.createElement('button');zero.className='doKey';zero.textContent='0';
+  zero.onclick=()=>{if(_doInput.length<2&&_doInput.length>0){_doInput+='0';updateDisp();}};
+  pad.appendChild(zero);
+  const ok=document.createElement('button');ok.className='doKey doOk';ok.textContent='✓';
+  ok.onclick=()=>{
+    const v=parseInt(_doInput||'0');
+    const fb=document.getElementById('doFb_'+dan);
+    if(v===dan){
+      sndOk();confetti();
+      document.getElementById('r2_'+dan).innerHTML='= <b style="color:#2d7d22;background:#e6f9f0;padding:2px 12px;border-radius:8px;">'+(dan*4)+'</b>';
+      fb.innerHTML=`🎉 정답! 한 묶음 추가 = <b>${dan}개</b> 추가!`;
+      fb.className='doFb ok';
+      setTimeout(()=>onCorrect&&onCorrect(),1500);
+    } else {
+      sndNo();_doInput='';updateDisp();
+      fb.innerHTML=`💭 다시 생각해 봐요! 새로 늘어난 점들을 세어 봐요`;
+      fb.className='doFb hint';
+    }
+  };
+  pad.appendChild(ok);
 }
 
 /* ============= Dan Learn — 핵심 학습 (slider+keypad) ============= */
