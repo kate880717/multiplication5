@@ -761,7 +761,7 @@ body,.bubble,.mascotBubble,#bubble,.instrTxt,.goal,.goal p,.tutCard,.tutCard *,.
           <div class="sTxt">묶음으로 정리되면 <span class="kw kw-gop">곱셈식</span>으로 빠르게</div>
           <div class="sEq">3 × 4 = 12</div></div>
         <div class="sumCard"><div class="sIco">⚙️</div><div class="sLbl">한 번 더 더하기</div>
-          <div class="sTxt"><span class="kw kw-dan">앞 단</span> + <span class="kw kw-plus">N</span> = 다음 단</div>
+          <div class="sTxt"><span class="kw kw-dan">앞 단</span> + <span class="kw kw-plus">□</span> = 다음 단</div>
           <div class="sEq">2×4 = 2×3 + 2</div></div>
         <div class="sumCard"><div class="sIco">🎯</div><div class="sLbl">7개 단 정복</div>
           <div class="sTxt">단마다 다른 규칙 <span class="kw kw-dan">규칙</span>!</div>
@@ -1292,7 +1292,7 @@ function renderDanOrigin(dan,cmpId,optId,onCorrect){
   // Box 1: dan × 3 (이미 알고 있는 식 — 결과 표시)
   const b1=document.createElement('div');b1.className='cmpBox';
   b1.innerHTML=`<h3>${dan} × 3</h3>`;
-  const d1=document.createElement('div');d1.className='cmpDots';
+  const d1=document.createElement('div');d1.className='cmpDots';d1.style.cssText='display:grid;grid-template-columns:repeat('+dan+',32px);gap:8px;justify-content:center;';
   for(let i=0;i<dan*3;i++){
     const dot=document.createElement('div');
     const grpIdx=Math.floor(i/dan);
@@ -1307,7 +1307,7 @@ function renderDanOrigin(dan,cmpId,optId,onCorrect){
   // Box 2: dan × 4 (탐구 대상 — 결과 가림)
   const b2=document.createElement('div');b2.className='cmpBox';
   b2.innerHTML=`<h3>${dan} × 4</h3>`;
-  const d2=document.createElement('div');d2.className='cmpDots';
+  const d2=document.createElement('div');d2.className='cmpDots';d2.style.cssText='display:grid;grid-template-columns:repeat('+dan+',32px);gap:8px;justify-content:center;';
   for(let i=0;i<dan*4;i++){
     const dot=document.createElement('div');dot.className='cdot';
     const grpIdx=Math.floor(i/dan);
@@ -1477,12 +1477,12 @@ function renderAllDans(){
   ALL_DANS.forEach(d=>{
     const c=document.createElement('div');c.className='dCard '+d.cls;
     const eqsH=Array.from({length:9},(_,i)=>`<div class="dEq">${d.dan}×${i+1}=${d.dan*(i+1)}</div>`).join('');
-    c.innerHTML=`<div class="dHd"><span class="dIco">${d.ico}</span><span class="dTitle">${d.dan}단</span><span class="dTip">${d.tip}</span></div><div class="dEqs">${eqsH}</div>`;
+    c.innerHTML=`<div class="dHd"><span class="dIco">${d.ico}</span><span class="dTitle">${d.dan===0?'0 곱하기':d.dan+'단'}</span><span class="dTip">${d.tip}</span></div><div class="dEqs">${eqsH}</div>`;
     c.onclick=()=>{
       if(!c.classList.contains('opened')){
         c.classList.add('opened');allDansOpened.add(d.dan);
         sndPop&&sndPop();
-        $('#allDansHint').innerHTML=`✨ ${d.dan}단 확인! (${allDansOpened.size}/6)`;
+        $('#allDansHint').innerHTML=`✨ ${d.dan===0?'0 곱하기':d.dan+'단'} 확인! (${allDansOpened.size}/6)`;
         if(allDansOpened.size>=6){
           $('#allDansHint').innerHTML='🎉 모든 단 확인 완료! 공책 시간으로!';
           $('#allDansNext').style.display='inline-block';
@@ -1518,7 +1518,7 @@ function startDanQuiz(){
 }
 function renderQuiz(){
   const P=QUIZ_PROBS[quizIdx];
-  $('#quizDan').textContent=`${P.ico} ${P.dan}단`;
+  $('#quizDan').textContent=`${P.ico} ${P.dan===0?'0 곱하기':P.dan+'단'}`;
   $('#quizQ').textContent=`${P.q} = ?`;
   $('#quizNum').textContent=`${quizIdx+1} / ${QUIZ_PROBS.length}`;
   $('#quizProgFill').style.width=(quizIdx/QUIZ_PROBS.length*100)+'%';
